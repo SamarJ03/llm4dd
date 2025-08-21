@@ -4,6 +4,7 @@ from loguru import logger
 from typing import Optional, Dict, Any
 from datetime import datetime
 
+# __all__ = ['Log', 'CFG', 'Secrets', 'LLM']
 __all__ = ['Log', 'CFG', 'Secrets']
 
 class Log:
@@ -11,8 +12,7 @@ class Log:
     _initialized = False
     
     def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+        if cls._instance is None: cls._instance = super().__new__(cls)
         return cls._instance
     
     def __init__(self):
@@ -245,59 +245,4 @@ class Secrets:
             keys.pop(name)
             self.write(keys)
 
-if __name__ == "__main__":
-    cfg = CFG()
-    log = Log()
-    sec = Secrets()
-    parser = argparse.ArgumentParser(prog='l4d', description='Command line interface for LLM4DD')
-
-    parser.add_argument('--verbose', '-v', 
-        type=str, choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], 
-        default="INFO",
-        help="Choose verbosity level."
-    )
-    parser.add_argument('--api-keys', '-k',
-        type=str, required=True, choices=['set', 'load'], 
-        help="Configure API keys. [load] pulls keys from '~/.config/llm4dd/keys.json'. [set] allows you to configure them through the command line."
-    )
-    parser.add_argument('--source-path', '-sp',
-        type=str, required=False, default="LOCAL",
-        help="Configure path to source data. Defaults to the local path at 'data/'."
-    )
-
-    args = parser.parse_args()
-    if args.verbose:
-        log.changeVerbose(args.verbose)
-        logger.info(f"Verbosity level set to {args.verbose}")
-    
-    if args.api_keys == 'load':
-        keys = sec.load()
-        if keys:
-            logger.info("API keys loaded successfully")
-            for key in sec.list(): logger.debug(f"keys found: {sec.list()}")
-        else: logger.warning("No API keys found in configuration")
-    elif args.api_keys == 'set':
-        accepted = ['openai', 'anthropic', 'xai', 'huggingface', 'openrouter', 'novita-ai']
-        print("Enter 'q' at any time to finish entering API keys..")
-        keys_set = 0
-        while True: 
-            provider = input("Enter LLM API provider: ").lower().strip()
-            if provider=='q': break
-            elif provider not in accepted: print(f'Invalid provider. Please enter API keys from the supported providers: {accepted}')
-            key = getpass.getpass(prompt="Enter API key: ").strip()
-            if key.lower()=='q': break
-            sec.set(name=f'{provider.upper()}_API_KEY', value=key); keys_set+=1
-        if keys_set==0: raise Exception(f'No keys set..')
-        else: logger.info(f'Succesfully set LLM API keys..')
-
-    if str(args.source_path).lower() != "local":
-        if not Path(args.source_path).exists(): raise FileExistsError(f"file not found:{args.source_path}")
-        cfg.set('env.source_path', args.source_path)
-        logger.info(f"Source path set to: {args.source_path}")
-    else:
-        default_path = Path(__file__).parent / "data"
-        if not default_path.exists():
-            default_path.mkdir(parents=True, exist_ok=True)
-            logger.info(f"Created default data directory: {default_path}")
-        cfg.set('env.source_path', str(default_path))
-        logger.info(f"Using default source path: {default_path}")
+class LLM: pass
