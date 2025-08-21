@@ -1,0 +1,28 @@
+name: l4dEnv
+channels:
+  - conda-forge
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+  - defaults
+dependencies:
+  - pubchempy
+  - tabulate
+  - polars
+  - python-dotenv
+  - rdkit
+  - openai
+  - numpy
+  - scikit-learn
+  - pip
+  - ipykernel
+  - python=3.10.13
+  - pytorch
+  - tiktoken
+  - loguru
+  - openpyxl
+  - tqdm
+  - pandas
+  - transformers
+  - huggingface_hub
+# ! conda env create -f environment.yml
+# ! conda activate l4dEnv

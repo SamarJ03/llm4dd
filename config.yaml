@@ -1,0 +1,425 @@
+env:
+  source_path: null
+  logging:
+    level: "INFO"
+    debug: true
+    track_memory: false
+    rotation:
+      max_size: "500 MB"
+      retention_days: 10
+      compression: "zip"
+    formats:
+      console: "<level>{level}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+      file: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+
+  hardware:
+    use_gpu: true
+    memory_limit: "8GB"
+    fallback_to_cpu: true
+    cuda_devices: "0"
+
+  llm:
+    default_provider: "openrouter"
+    timeout: 30
+    retry:
+      max_attempts: 3
+      backoff_factor: 2
+    rate_limits:
+      requests_per_minute: 60
+      tokens_per_minute: 40000
+    params:
+      temperature: 0.7
+      max_tokens: 500
+      top_p: 1.0
+      frequency_penalty: 0.0
+      presence_penalty: 0.0
+      stop_sequences: []
+    validation:
+      max_input_tokens: 4000
+      max_output_tokens: 1000
+      token_buffer: 100
+
+  modules:
+    dataPrep:
+      random_state: 15
+      variance_threshold: 0.1
+      train_split: 0.7
+      valid_split: 0.15
+      test_split: 0.15
+      feature_selection:
+        method: "variance"
+        threshold: 0.1
+      scaling:
+        method: "standard"
+        with_mean: true
+        with_std: true
+    inference:
+      batch_size: 32
+      num_workers: 4
+      cache_results: true
+      cache_dir: "${root}/cache"
+
+  cache:
+    enabled: true
+    directory: "${root}/cache"
+    max_size: "5GB"
+    retention_days: 30
+    compression: true
+---
+app:
+  name: "llm4dd"
+  version: "0.1.0"
+  description: "LLM-based framework for cheminformatic drug discovery"
+  URL: "https://github.com/SamarJ03/llm4dd.git"
+
+  paths:
+    root: &root ${base_path}
+    config: &config "${root}/config.yaml"
+    environment: &env "${root}/environment.yml"
+    main: &main "${root}/llm4dd.py"
+    utils: &utils "${root}/utils.py"
+
+    data: &data_path "${root}/data"
+    features:
+      main: "${data_path}/features.csv"
+      lib: "${data_path}/lib.csv"
+      directory: &features_dir "${data_path}/features"
+      meta: "${features_dir}/meta"
+      types:
+        - ecfp4
+        - maccs
+        - rdkit
+
+    scaffold: &scaffold_dir "${data_path}/scaffold"
+
+    resources: &resources_path "${root}/resources"
+    results: "${resources_path}/results"
+    cache: "${resources_path}/cache"
+
+    src: &src_path "${root}/src"
+    modules:
+      dataPrep: "${src_path}/dataPrep.py"
+      createPrompts: "${src_path}/CreatePrompts.py"
+      synthesize: "${src_path}/Synthesize.py"
+      inference: "${src_path}/Inference.py"
+      summarizeRules: "${src_path}/SummarizeRules.py"
+      codeGenAndEval: "${src_path}/CodeGenAndEval.py"
+
+  llm:
+    tasks:
+      comprehension:
+        desc: |
+          "Evaluates the LLM's ability to understand and interpret given "
+          "text. Includes tasks like question answering, natural "
+          "language inference, and extracting information from complex documents."
+        benchmarks:
+          - MMLU-PRO: &MMLU-PRO
+            scope:
+              - "knowledge"
+              - "general"
+            sources:
+              paper: https://arxiv.org/abs/2406.01574
+              github: https://github.com/TIGER-AI-Lab/MMLU-Pro
+              dataset: https://huggingface.co/datasets/TIGER-Lab/MMLU-Pro
+          - AI2 Reasoning Challenge: &ARC
+            scope:
+              - "knowledge"
+              - "science"
+            sources:
+              paper: https://arxiv.org/abs/1803.05457
+              dataset: https://huggingface.co/datasets/allenai/ai2_arc
+          - LAMBADA: &LAMBADA
+            scope:
+              - "language"
+              - "long-range context"
+            sources:
+              paper: https://arxiv.org/abs/1606.06031
+              dataset: https://huggingface.co/papers/1606.06031
+          - HellaSwag: &HellaSwag
+            scope:
+              - "language"
+              - "narrative prediction"
+            sources:
+              paper: https://arxiv.org/abs/1905.07830
+              github: https://github.com/rowanz/hellaswag/tree/master
+              dataset: https://github.com/rowanz/hellaswag/tree/master/data
+          - MultiNLI: &MultiNLI
+            scope:
+              - "language"
+              - "dialect variation"
+            sources:
+              paper: https://arxiv.org/abs/1704.05426
+              dataset: https://huggingface.co/datasets/bias-amplified-splits/mnli
+          - SuperGLUE: &SuperGLUE
+            scope:
+              - "langauge"
+            sources:
+              paper: https://arxiv.org/abs/1905.00537
+              dataset: https://huggingface.co/datasets/aps/super_glue
+          - TriviaQA: &TriviaQA
+              scope:
+                - "knowledge"
+                - "Trivia"
+              sources:
+                paper: https://arxiv.org/abs/1705.03551
+                github: https://github.com/mandarjoshi90/triviaqa
+                dataset: https://huggingface.co/datasets/mandarjoshi/trivia_qa
+          - WinoGrande: &WinoGrande
+            scope:
+              - "language"
+              - "subtle textual variation"
+            desc: |
+              "A WSC-inspired dataset to benchmark computational models and their context conceptualization capabilities. Evaluations "
+              "show a model's ability to grasp subtle context within a textual context."
+            sources:
+              paper: https://arxiv.org/abs/1907.10641
+              github: https://github.com/allenai/winogrande
+              dataset: https://huggingface.co/datasets/allenai/winogrande
+          - SciQ: &SciQ
+            scope:
+              - "knowledge"
+              - "science"
+            sources:
+              paper: https://arxiv.org/abs/1707.06209
+              dataset: http://allenai.org/data.html
+        use_cases:
+          - Synthesize.py
+          - Inference.py
+          - SummarizeRules.py
+          - CodeGenAndEval.py
+      reasoning:
+        desc: |
+          "Measures the LLM's capacity for logical thought, problem-solving, and "
+          "drawing conclusions from provided information."
+        benchmarks:
+          - GSM8K: &GSM8K
+            scope:
+              - "math"
+            sources:
+              paper: https://arxiv.org/abs/2110.14168
+              dataset: https://huggingface.co/datasets/openai/gsm8k
+          - DROP: &DROP
+            scope:
+              - "reading comprehension"
+              - "discrete operations"
+            sources:
+              paper: https://arxiv.org/abs/1903.00161
+              dataset: https://huggingface.co/datasets/ucinlp/drop
+          - CRASS: &CRASS
+            scope:
+              - "planning"
+              - "analysis"
+            source:
+              paper: https://arxiv.org/abs/2112.11941
+              datset: https://github.com/apergo-ai/CRASS-data-set/tree/main
+          - BBH: &BBH
+            scope:
+              - "complex tasks"
+              - "multi-step reasoning"
+            sources:
+              paper: https://arxiv.org/abs/2210.09261
+              dataset: https://huggingface.co/datasets/lukaemon/bbh
+          - AGIEval: &AGIEval
+            scope:
+              - "academic scenarios"
+              - "professional scenarios"
+            sources:
+              paper: https://arxiv.org/abs/2304.06364
+              dataset: https://huggingface.co/papers/2304.06364
+          - BoolQ: &BoolQ
+            scope:
+              - "implicit context"
+            sources:
+              paper: https://arxiv.org/abs/1905.10044
+              dataset: https://huggingface.co/datasets/google/boolq
+        use_cases:
+          - Synthesize.py
+          - Inference.py
+          - CodeGenAndEval.py
+      summarization/grounding:
+        desc: |
+          "Assesses the LLM's skill in condensing longer texts into shorter, coherent "
+          "summaries while maintaining accuracy."
+        benchmarks:
+          - TruthfulQA: &TruthfulQA
+            scope:
+              - "grounding"
+            sources:
+              paper: https://arxiv.org/abs/2109.07958v2
+              dataset: https://github.com/sylinrl/TruthfulQA
+          - ACI-BENCH: &ACI-BENCH
+            scope:
+              - "grounding"
+              - "clinical"
+            sources:
+              paper: https://arxiv.org/abs/2306.02022
+              dataset: https://huggingface.co/datasets/ClinicianFOCUS/ACI-Bench-Refined
+          - MS-MARCO: &MS-MARCO
+            scope:
+              - "grounding"
+              - "real-world queries"
+            sources:
+              paper: https://arxiv.org/abs/1611.09268
+              dataset: https://huggingface.co/datasets/mteb/msmarco-v2
+          - QMSum: &QMSum
+            scope:
+              - "summarization"
+            sources:
+              paper: https://arxiv.org/abs/2104.05938
+              dataset: https://github.com/Yale-LILY/QMSum/tree/main/data/ALL
+          - PIQA: &PIQA
+            scope:
+              - "grounding"
+              - "physical commensense"
+            sources:
+              paper: https://arxiv.org/abs/1911.11641
+              dataset: https://huggingface.co/datasets/ybisk/piqa
+        use_cases:
+          - CreatePrompts.py
+          - Synthesize.py
+          - SummarizeRules.py
+      coding:
+        desc: |
+          "Tests the LLM's proficiency in understanding, generating, and debugging "
+          "programming code."
+        benchmarks:
+          - CodeXGLUE: &CodeXGLUE
+            scope:
+              - "comprehension"
+              - "explanation"
+              - "editing"
+            sources:
+              paper: https://arxiv.org/abs/2102.04664
+              dataset: https://huggingface.co/papers/2102.04664
+          - HumanEval: &HumanEval
+            scope:
+              - "efficiency"
+              - "accuracy"
+            sources:
+              paper: https://arxiv.org/abs/2107.03374
+              dataset: https://huggingface.co/datasets/openai/openai_humaneval
+          - MBPP: &MMPP
+            scope:
+              - "Python"
+            sources:
+              paper: https://arxiv.org/abs/2108.07732
+              dataset: https://huggingface.co/papers/2108.07732
+        use_cases:
+          - CodeGenAndEval.py
+        params:
+          temperature: 0.2
+          max_tokens: 1500
+          top_p: 0.99
+---
+models:
+  default_provider: "openrouter" # Global default provider
+
+  # Task-specific default model configurations
+  defaults:
+    enabled: true
+    comprehension:
+      provider: "openrouter"
+      model: "anthropic/claude-2"
+      fallback: "meta-llama/llama-2-70b-chat"
+      params:
+        temperature: 0.7
+        max_tokens: 800
+        top_p: 0.95
+
+    reasoning:
+      provider: "openrouter"
+      model: "anthropic/claude-2"
+      fallback: "meta-llama/llama-2-70b-chat"
+      params:
+        temperature: 0.5
+        max_tokens: 1000
+        top_p: 0.98
+
+    summarization:
+      provider: "openrouter"
+      model: "anthropic/claude-2"
+      fallback: "meta-llama/llama-2-70b-chat"
+      params:
+        temperature: 0.3
+        max_tokens: 500
+        top_p: 0.9
+
+    coding:
+      provider: "openrouter"
+      model: "anthropic/claude-2"
+      fallback: "codellama/codellama-34b-instruct"
+      params:
+        temperature: 0.2
+        max_tokens: 1500
+        top_p: 0.99
+
+  api:
+    openrouter:
+      enabled: true
+      api_base: "https://openrouter.ai/api/v1"
+      api_key: ${OPENROUTER_KEY}
+      timeout: 30
+      retry:
+        max_attempts: 3
+        backoff_factor: 2
+      rate_limits:
+        requests_per_minute: 50
+        tokens_per_minute: 30000
+      tasks:
+        comprehension:
+          models:
+            - name: "default_openrouter_model"
+              model_id: "anthropic/claude-2"
+              task: "comprehension"
+              params:
+                temperature: 0.7
+                max_tokens: 800
+            - name: "alternative_openrouter_model"
+              model_id: "meta-llama/llama-2-70b-chat"
+              task: "comprehension"
+              params:
+                temperature: 0.5
+                max_tokens: 300
+        reasoning:
+          models:
+            - name: "default_reasoning_model"
+              model_id: "anthropic/claude-2"
+              task: "reasoning"
+              params:
+                temperature: 0.5
+                max_tokens: 1000
+        summarization:
+          models:
+            - name: "default_summarization_model"
+              model_id: "anthropic/claude-2"
+              task: "summarization"
+              params:
+                temperature: 0.3
+                max_tokens: 500
+
+    huggingface:
+      enabled: false
+      api_base: "https://huggingface.co"
+      api_key: ${HUGGINGFACE_TOKEN}
+      default_model: "default_huggingface_model"
+      timeout: 30
+      retry:
+        max_attempts: 3
+        backoff_factor: 2
+      tasks:
+        comprehension:
+          models:
+            - name: "default_huggingface_model"
+              model_id: "meta-llama/llama-2-70b-chat"
+              task: "comprehension"
+              params:
+                temperature: 0.7
+                max_tokens: 800
+        coding:
+          models:
+            - name: "default_coding_model"
+              model_id: "codellama/codellama-34b-instruct"
+              task: "coding"
+              params:
+                temperature: 0.2
+                max_tokens: 1500
