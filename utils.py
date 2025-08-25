@@ -1,11 +1,11 @@
-import os, sys, inspect, resource, argparse, json, yaml, shutil, getpass 
+import os, sys, inspect, resource, argparse, json, yaml, shutil, getpass, litellm
 from pathlib import Path
 from loguru import logger
-from typing import Optional, Dict, Any
+from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 
-# __all__ = ['Log', 'CFG', 'Secrets', 'LLM']
-__all__ = ['Log', 'CFG', 'Secrets']
+__all__ = ['Log', 'CFG', 'Secrets', 'LLM']
+# __all__ = ['Log', 'CFG', 'Secrets']
 
 class Log:
     _instance = None
@@ -39,11 +39,9 @@ class Log:
             debug_path = log_path / "debug"
             error_path = log_path / "error"
 
-            for path in (log_path, debug_path, error_path):
-                path.mkdir(parents=True, exist_ok=True)
+            for path in (log_path, debug_path, error_path): path.mkdir(parents=True, exist_ok=True)
 
-            for handler_id in self.handlers.values():
-                logger.remove(handler_id)
+            for handler_id in self.handlers.values(): logger.remove(handler_id)
             self.handlers.clear()
 
             self.handlers["stderr"] = logger.add(
@@ -206,6 +204,8 @@ class CFG:
             logger.info(f"Config backup created at {backup_path}")
         except Exception as e: logger.error(f"Failed to create config backup: {e}")
 
+    def get_task_models(self) -> dict: return self.get("models.tasks", {})
+
 class Secrets: 
     def __init__(self): 
         self.user_dir = Path.home() / ".config" / "llm4dd"
@@ -232,7 +232,7 @@ class Secrets:
     
     def get(self, name: str, fallback_env: Optional[str]=None) -> Optional[str]: 
         keys = self.load()
-        v = keys.get(name)
+        v = keys.get(name.lower())
         if v: return v
         if fallback_env: return os.getenv(fallback_env)
         return None
@@ -245,4 +245,38 @@ class Secrets:
             keys.pop(name)
             self.write(keys)
 
-class LLM: pass
+# class LLM:
+#     def __init__(self) -> None:
+#         self.task_models = self.get_task_models()
+#         self.current_task: Optional[str] = None
+#         self.current_model: Optional['LLM.Model'] = None
+
+#     def get_task_models(self) -> Dict[str, Dict]:
+#         tasks = CFG.get("models.tasks", {})
+#         valid_tasks = {}
+
+#         def validate_model(config: dict) -> Tuple[bool, Dict]:
+#             provider = config.get('provider')
+#             model = config.get('model')
+#             if not provider or not model:
+#                 return False, {}
+#             api_key = Secrets.get(f"{provider.upper()}_API_KEY")
+#             return (litellm.utils.check_valid_key(model=model, api_key=api_key), {'provider': provider, 'model': model, 'params': config.get('params', {})})
+
+#         for name, config in tasks.items():
+#             is_valid, model_config = validate_model(config)
+#             if not is_valid and 'fallback' in config:
+#                 is_valid, model_config = validate_model(config['fallback'])
+
+#             if is_valid:
+#                 valid_tasks[name] = model_config
+#                 logger.debug(f"Model validated for task: {name}")
+#             else:
+#                 logger.error(f"No valid model found for task: {name}")
+#         return valid_tasks
+    
+# init, get config models, validate, get fallback, get params, get model info
+class LLM: 
+    def __init__(self): pass
+    def _get_task_models(self): pass
+    
