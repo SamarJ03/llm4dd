@@ -1,5 +1,5 @@
 #!/usr/bin/env python3 
-import os, argparse, getpass, asyncio, litellm
+import os, argparse, getpass, litellm
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 from loguru import logger
@@ -9,7 +9,6 @@ cfg = CFG(); log = Log(); sec = Secrets(); llm = LLM()
 
 # Supported LLM providers
 accepted_providers = ['openai', 'anthropic', 'xai', 'huggingface', 'openrouter', 'novita-ai']
-
 
 # class Model:
 #     def __init__(self, provider: str, model: str, params: Optional[Dict] = None) -> None:

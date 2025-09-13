@@ -75,7 +75,6 @@ class Log:
                     ),
                     level="TRACE"
                 )
-
             return logger
 
         except Exception as e:
@@ -244,6 +243,7 @@ class Secrets:
         if name in keys: 
             keys.pop(name)
             self.write(keys)
+
 
 # class LLM:
 #     def __init__(self) -> None:

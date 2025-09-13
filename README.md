@@ -22,9 +22,9 @@ This project implements a hybridized pipeline that integrates large language mod
   - openrouter
   - novita AI
 
-### Biodata Requirments
+<!-- ### Biodata Requirments
 *...to be specified...*
-<!-- Input data must be high-throughput morphological screening results contained in a supported file type. Each compound entry (row) must include a unique identifier, a valid canonical SMILES format of the compound, and normalized 'activity score'.  -->
+Input data must be high-throughput morphological screening results contained in a supported file type. Each compound entry (row) must include a unique identifier, a valid canonical SMILES format of the compound, and normalized 'activity score'.  -->
 
 ### Project Structure
 ```
