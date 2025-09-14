@@ -3,29 +3,30 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pubchempy
-  - tabulate
-  - polars
-  - python-dotenv
-  - rdkit
-  - openai
-  - numpy
-  - scikit-learn
-  - ipykernel
-  - python=3.10.13
-  - pytorch
-  - tiktoken
-  - loguru
-  - openpyxl
-  - tqdm
-  - pandas
-  - transformers
-  - huggingface_hub
-  - litellm
-  - pyaml
-  - jupyter
-  - configargparse
-  - pip
+  - 
+  # - pubchempy
+  # - tabulate
+  # - polars
+  # - python-dotenv
+  # - rdkit
+  # - openai
+  # - numpy
+  # - scikit-learn
+  # - ipykernel
+  # - python=3.10.13
+  # - pytorch
+  # - tiktoken
+  # - loguru
+  # - openpyxl
+  # - tqdm
+  # - pandas
+  # - transformers
+  # - huggingface_hub
+  # - litellm
+  # - pyaml
+  # - jupyter
+  # - configargparse
+  # - pip
 
 # ! conda env create -f environment.yml
 # ! conda activate l4dEnv
